@@ -75,9 +75,11 @@ bool b_Aimbot = false;
 
 static CFMenuWindow *g_MenuWindow = nil;
 
-%hook UIWindow
-- (void)makeKeyAndVisible {
-    %orig;
+// Hook pentru UIWindow fara Logos
+void (*orig_UIWindow_makeKeyAndVisible)(id, SEL);
+void my_UIWindow_makeKeyAndVisible(id self, SEL _cmd) {
+    if (orig_UIWindow_makeKeyAndVisible) orig_UIWindow_makeKeyAndVisible(self, _cmd);
+    
     if (!g_MenuWindow) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             g_MenuWindow = [[CFMenuWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
@@ -85,4 +87,14 @@ static CFMenuWindow *g_MenuWindow = nil;
         });
     }
 }
-%end
+
+__attribute__((constructor)) static void init() {
+    Class winClass = objc_getClass("UIWindow");
+    if (winClass) {
+        Method m = class_getInstanceMethod(winClass, @selector(makeKeyAndVisible));
+        if (m) {
+            orig_UIWindow_makeKeyAndVisible = (void(*)(id,SEL))method_getImplementation(m);
+            method_setImplementation(m, (IMP)my_UIWindow_makeKeyAndVisible);
+        }
+    }
+}
