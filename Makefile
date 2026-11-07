@@ -5,7 +5,7 @@ INSTALL_TARGET_PROCESSES = CounterFlame
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = CFMenu
-CFMenu_FILES = ImGuiDrawView.mm Filter.plist
+CFMenu_FILES = ImGuiDrawView.mm
 CFMenu_CFLAGS = -fobjc-arc -Wno-nontrivial-memcall -Wno-error
 CFMenu_CCFLAGS = -Wno-nontrivial-memcall -Wno-error
 CFMenu_FRAMEWORKS = UIKit Foundation Metal QuartzCore
