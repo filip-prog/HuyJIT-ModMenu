@@ -9,7 +9,6 @@ bool b_Aimbot = false;
 @interface CFMenuWindow : UIWindow <UIGestureRecognizerDelegate>
 @property (nonatomic, strong) UIView *menuView;
 @property (nonatomic, strong) UIButton *floatingBtn;
-@property (nonatomic, assign) CGPoint originalCenter;
 @end
 
 @implementation CFMenuWindow
@@ -21,7 +20,7 @@ bool b_Aimbot = false;
         self.backgroundColor = [UIColor clearColor];
         self.rootViewController = [[UIViewController alloc] init];
         
-        // Butonul mic plutitor (pentru redeschidere)
+        // Butonul mic plutitor (CF)
         self.floatingBtn = [UIButton buttonWithType:UIButtonTypeSystem];
         self.floatingBtn.frame = CGRectMake(20, 100, 40, 40);
         self.floatingBtn.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.8];
@@ -39,7 +38,7 @@ bool b_Aimbot = false;
         self.menuView.layer.cornerRadius = 10;
         self.menuView.layer.borderWidth = 1;
         self.menuView.layer.borderColor = [UIColor whiteColor].CGColor;
-        self.menuView.hidden = YES; // Ascuns la început
+        self.menuView.hidden = YES;
         [self.rootViewController.view addSubview:self.menuView];
         
         // Titlu
@@ -49,7 +48,7 @@ bool b_Aimbot = false;
         title.font = [UIFont boldSystemFontOfSize:18];
         [self.menuView addSubview:title];
         
-        // Buton Închidere (X)
+        // Buton Închidere
         UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
         closeBtn.frame = CGRectMake(210, 10, 30, 30);
         [closeBtn setTitle:@"X" forState:UIControlStateNormal];
@@ -63,31 +62,41 @@ bool b_Aimbot = false;
         [espSwitch addTarget:self action:@selector(toggleESP:) forControlEvents:UIControlEventValueChanged];
         [self.menuView addSubview:espSwitch];
         UILabel *espLabel = [[UILabel alloc] initWithFrame:CGRectMake(80, 60, 150, 30)];
-        espLabel.text = @"ESP Box";
-        espLabel.textColor = [UIColor whiteColor];
+        espLabel.text = @"ESP Box"; espLabel.textColor = [UIColor whiteColor];
         [self.menuView addSubview:espLabel];
         
         UISwitch *skelSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(20, 110, 50, 30)];
         [skelSwitch addTarget:self action:@selector(toggleSkeleton:) forControlEvents:UIControlEventValueChanged];
         [self.menuView addSubview:skelSwitch];
         UILabel *skelLabel = [[UILabel alloc] initWithFrame:CGRectMake(80, 110, 150, 30)];
-        skelLabel.text = @"ESP Skeleton";
-        skelLabel.textColor = [UIColor whiteColor];
+        skelLabel.text = @"ESP Skeleton"; skelLabel.textColor = [UIColor whiteColor];
         [self.menuView addSubview:skelLabel];
         
         UISwitch *aimSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(20, 160, 50, 30)];
         [aimSwitch addTarget:self action:@selector(toggleAimbot:) forControlEvents:UIControlEventValueChanged];
         [self.menuView addSubview:aimSwitch];
         UILabel *aimLabel = [[UILabel alloc] initWithFrame:CGRectMake(80, 160, 150, 30)];
-        aimLabel.text = @"Aimbot";
-        aimLabel.textColor = [UIColor whiteColor];
+        aimLabel.text = @"Aimbot"; aimLabel.textColor = [UIColor whiteColor];
         [self.menuView addSubview:aimLabel];
         
-        // Logica de mutare (Drag)
-        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
-        [self.menuView addGestureRecognizer:pan];
+        // Logica de mutare pentru Meniu
+        UIPanGestureRecognizer *panMenu = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+        [self.menuView addGestureRecognizer:panMenu];
+        
+        // Logica de mutare pentru Butonul CF
+        UIPanGestureRecognizer *panBtn = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+        [self.floatingBtn addGestureRecognizer:panBtn];
     }
     return self;
+}
+
+// AICI E SMECHERIA: Lasam touch-urile sa treaca prin fereastra goala
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    UIView *hitView = [super hitTest:point withEvent:event];
+    if (hitView == self.rootViewController.view) {
+        return nil; // Touch-ul merge in joc
+    }
+    return hitView;
 }
 
 - (void)showMenu { self.menuView.hidden = NO; }
