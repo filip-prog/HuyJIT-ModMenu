@@ -1,52 +1,88 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
-#import "IMGUI/imgui.h"
 #import <objc/runtime.h>
 
-#define OFF_PLAYERCONTROLLER_PLAYER   0x90
-#define OFF_PLAYER_ISLOCAL            0x1C
-
-template <typename T> T ReadMem(void* base, uint64_t offset) {
-    if (!base) return T();
-    return *(T*)((uint64_t)base + offset);
-}
-
-static void* g_GameController = nullptr;
-static void* g_LocalPlayer = nullptr;
-
+// Variabilele globale pentru meniu
 bool b_ESP = false;
 bool b_Skeleton = false;
 bool b_Aimbot = false;
 
-// Hook GameController
-void (*orig_GameController_Awake)(id, SEL);
-void my_GameController_Awake(id self, SEL _cmd) {
-    g_GameController = (__bridge void*)self;
-    if (orig_GameController_Awake) orig_GameController_Awake(self, _cmd);
+// Creăm fereastra meniului
+@interface CFMenuWindow : UIWindow
+@property (nonatomic, strong) UIView *menuView;
+@end
+
+@implementation CFMenuWindow
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.windowLevel = UIWindowLevelAlert + 1;
+        self.backgroundColor = [UIColor clearColor];
+        self.rootViewController = [[UIViewController alloc] init];
+        
+        // Panoul negru semi-transparent
+        self.menuView = [[UIView alloc] initWithFrame:CGRectMake(20, 100, 250, 220)];
+        self.menuView.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.9];
+        self.menuView.layer.cornerRadius = 10;
+        self.menuView.layer.borderWidth = 1;
+        self.menuView.layer.borderColor = [UIColor whiteColor].CGColor;
+        [self.rootViewController.view addSubview:self.menuView];
+        
+        // Titlu
+        UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, 250, 30)];
+        title.text = @"CF Menu";
+        title.textColor = [UIColor whiteColor];
+        title.textAlignment = NSTextAlignmentCenter;
+        title.font = [UIFont boldSystemFontOfSize:18];
+        [self.menuView addSubview:title];
+        
+        // Buton ESP
+        UISwitch *espSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(20, 60, 50, 30)];
+        [espSwitch addTarget:self action:@selector(toggleESP:) forControlEvents:UIControlEventValueChanged];
+        [self.menuView addSubview:espSwitch];
+        UILabel *espLabel = [[UILabel alloc] initWithFrame:CGRectMake(80, 60, 150, 30)];
+        espLabel.text = @"ESP Box";
+        espLabel.textColor = [UIColor whiteColor];
+        [self.menuView addSubview:espLabel];
+        
+        // Buton Skeleton
+        UISwitch *skelSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(20, 110, 50, 30)];
+        [skelSwitch addTarget:self action:@selector(toggleSkeleton:) forControlEvents:UIControlEventValueChanged];
+        [self.menuView addSubview:skelSwitch];
+        UILabel *skelLabel = [[UILabel alloc] initWithFrame:CGRectMake(80, 110, 150, 30)];
+        skelLabel.text = @"ESP Skeleton";
+        skelLabel.textColor = [UIColor whiteColor];
+        [self.menuView addSubview:skelLabel];
+        
+        // Buton Aimbot
+        UISwitch *aimSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(20, 160, 50, 30)];
+        [aimSwitch addTarget:self action:@selector(toggleAimbot:) forControlEvents:UIControlEventValueChanged];
+        [self.menuView addSubview:aimSwitch];
+        UILabel *aimLabel = [[UILabel alloc] initWithFrame:CGRectMake(80, 160, 150, 30)];
+        aimLabel.text = @"Aimbot";
+        aimLabel.textColor = [UIColor whiteColor];
+        [self.menuView addSubview:aimLabel];
+    }
+    return self;
 }
 
-// Hook PlayerController
-void (*orig_PlayerController_Awake)(id, SEL);
-void my_PlayerController_Awake(id self, SEL _cmd) {
-    void* selfPtr = (__bridge void*)self;
-    void* player = ReadMem<void*>(selfPtr, OFF_PLAYERCONTROLLER_PLAYER);
-    if (player && ReadMem<bool>(player, OFF_PLAYER_ISLOCAL)) {
-        g_LocalPlayer = selfPtr;
-    }
-    if (orig_PlayerController_Awake) orig_PlayerController_Awake(self, _cmd);
-}
+- (void)toggleESP:(UISwitch *)sender { b_ESP = sender.isOn; }
+- (void)toggleSkeleton:(UISwitch *)sender { b_Skeleton = sender.isOn; }
+- (void)toggleAimbot:(UISwitch *)sender { b_Aimbot = sender.isOn; }
 
-// Se executa cand tweak-ul se incarca
-__attribute__((constructor)) static void init() {
-    Class gc = objc_getClass("GameController");
-    if (gc) {
-        Method m = class_getInstanceMethod(gc, @selector(Awake));
-        if (m) { orig_GameController_Awake = (void(*)(id,SEL))method_getImplementation(m); method_setImplementation(m, (IMP)my_GameController_Awake); }
-    }
-    
-    Class pc = objc_getClass("PlayerController");
-    if (pc) {
-        Method m = class_getInstanceMethod(pc, @selector(Awake));
-        if (m) { orig_PlayerController_Awake = (void(*)(id,SEL))method_getImplementation(m); method_setImplementation(m, (IMP)my_PlayerController_Awake); }
+@end
+
+static CFMenuWindow *g_MenuWindow = nil;
+
+%hook UIWindow
+- (void)makeKeyAndVisible {
+    %orig;
+    if (!g_MenuWindow) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            g_MenuWindow = [[CFMenuWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            g_MenuWindow.hidden = NO;
+        });
     }
 }
+%end
